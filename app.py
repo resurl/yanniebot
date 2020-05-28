@@ -68,7 +68,7 @@ async def hello(ctx):
 
 @bot.command(aliases=['p,play'])
 async def play(ctx, url=None):
-    if (url):
+    if (url != None):
         channel = ctx.author.voice.channel
         await channel.connect()
         vc = ctx.voice_client
@@ -80,14 +80,23 @@ async def play(ctx, url=None):
         await ctx.send(f'Now playing: {player.title}')
 
     else:
+        if (ctx.voice_client.is_paused):
+            ctx.voice_client.resume()
         chatChannel.send('No URL specified!')
-        
+
+# if audio is playing
+@bot.command()
+async def pause(ctx):
+    if (ctx.voice_client.is_playing):
+        ctx.voice_client.pause()
 
 @bot.command()
-async def leave(ctx, url=""):
+async def leave(ctx):
     await ctx.voice_client.disconnect()
     
 bot.run(token)
 
-# want to have music bot first
+# want to have music bot fully implemented first
+    # queue, skip, stop, 
+    # if command is .play <url> list, first display search results and allow users to pick
 # then tea game
