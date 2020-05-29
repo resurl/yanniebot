@@ -1,6 +1,5 @@
 import discord
 import os
-import youtube_dl
 import random
 import asyncio
 import loadconfig
