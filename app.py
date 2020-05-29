@@ -27,6 +27,7 @@ ytdl_format_options = {
 }
 
 ffmpeg_options = {
+    'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 
     'options': '-vn'
 }
 
@@ -40,10 +41,24 @@ class YTDLSource(discord.PCMVolumeTransformer):
         self.url = data.get('url')
 
     @classmethod
+    async def list_from_url(cls, url, *, loop=None):
+        string = f'Displaying results for {url}:\n```'
+        loop = loop or asyncio.get_event_loop()
+        data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=False))
+
+        if 'entries' in data:
+            for entry in data['entries']:
+                string += entry.get('title')
+        else:
+            string += 'No entries found'
+        string += "```"
+        return string 
+
+    @classmethod
     async def from_url(cls, url, *, loop=None, stream=False):
         loop = loop or asyncio.get_event_loop()
         data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
-
+        
         if 'entries' in data:
             data = data['entries'][0]
 
@@ -67,18 +82,24 @@ async def hello(ctx):
     await ctx.send(f'hello {ctx.author.mention}')
 
 @bot.command(aliases=['p,play'])
-async def play(ctx, url=None):
+async def play(ctx, url=None, showResults=None):
     if (url != None):
         channel = ctx.author.voice.channel
         await channel.connect()
         vc = ctx.voice_client
-        
-        async with ctx.typing():
-            player = await YTDLSource.from_url(url, loop=bot.loop, stream=True)
-            ctx.voice_client.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
-        
-        await ctx.send(f'Now playing: {player.title}')
 
+        # if showResults is false, i.e. msg is not of form '.play <url> list'
+        if (showResults == "list"):
+            message = await YTDLSource.list_from_url(url, loop=bot.loop)
+            await ctx.send(f'{message}')
+        elif (showResults == None):
+            async with ctx.typing():
+                player = await YTDLSource.from_url(url, loop=bot.loop, stream=True)
+                ctx.voice_client.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
+        
+            await ctx.send(f'Now playing: {player.title}')
+        else:
+            await ctx.send('i have no idea what you want me to do')
     else:
         if (ctx.voice_client.is_paused):
             ctx.voice_client.resume()
@@ -97,6 +118,6 @@ async def leave(ctx):
 bot.run(token)
 
 # want to have music bot fully implemented first
-    # queue, skip, stop, 
+    # queue, skip, stop, playlist support? soundcloud............
     # if command is .play <url> list, first display search results and allow users to pick
 # then tea game

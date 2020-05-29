@@ -7,6 +7,7 @@ yanniebot is a personal server Discord bot that was designed to replicate the co
 * talk in general chat
 * send images
 * host text channel games
+* reads robert's tweets
 
 ## Prerequisites
 
@@ -14,8 +15,4 @@ Before you begin, ensure you have met the following requirements:
 <!--- These are just example requirements. Add, duplicate or remove as required --->
 * You have installed the latest version of Python.
 * You have installed the latest version of [FFmpeg](https://ffmpeg.org/download.html).
-
-## License
-<!--- If you're not sure which open license to use see https://choosealicense.com/--->
-
-This project uses the following license: [<license_name>](<link>).
+* You have a Discord API key
