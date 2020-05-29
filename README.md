@@ -19,5 +19,5 @@ Before you begin, ensure you have met the following requirements:
 
 Once those are done, run
 `pip install -U discord.py`
-`pip install youtube_dl`
+`pip install -U youtube_dl`
 in the python interpreter to ensure you have the proper modules
