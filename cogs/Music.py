@@ -84,22 +84,32 @@ class Music(commands.Cog):
         self.bot = bot
 
     @commands.command(aliases=['p,play'])
-    async def play(self, ctx, url=None, showResults=None):
-        if (url != None):
-            channel = ctx.author.voice.channel
+    async def play(self, ctx, query=None, showResults=None):
+        channel = ctx.author.voice.channel
+        if (query.startsWith('https://')):
             await channel.connect()
             vc = ctx.voice_client
-
             async with ctx.typing():
-                player = await YTDLSource.from_url(url, loop=self.bot.loop, stream=True)
+                player = await YTDLSource.from_url(query, loop=self.bot.loop, stream=True)
                 ctx.voice_client.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
-            
-                await ctx.send(f'Now playing: {player.title}')
-        else:
-            if (ctx.voice_client.is_paused):
-                ctx.voice_client.resume()
-            ctx.send('No URL specified!')
+                
+                await ctx.send(f'Now playing: {player.title}') # put embed here later
+        
+        elif (showResults is not None): 
+            results = YTDLSource.search(query)
+            msg = f'Search results for {query}'
+            for x in range(0,5):
+                msg += f'{x}. {results[x].title} by {results[x].by}\n'
 
+            await ctx.send(msg)
+        elif (query is not None and showResults is None):
+            # implement later........
+            await ctx.send('a')
+        elif(ctx.voice_client.is_paused and query is None):
+            ctx.voice_client.resume()
+        else:
+            await ctx.send('No query specified!')
+        
     # if audio is playing
     @commands.command()
     async def pause(self, ctx):
