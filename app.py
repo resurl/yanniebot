@@ -8,6 +8,8 @@ from discord.ext import commands
 
 load_dotenv()
 
+## just make an .env and put KEY=your_api_token
+
 bot = commands.Bot(command_prefix='.')
 token = os.getenv('KEY')
 chatChannel = None
@@ -19,7 +21,6 @@ async def on_ready():
     print('bot ready')
     print(f'Bot name: {bot.user.name}')
     print(f'Discord version: {discord.__version__}')
-    chatChannel = await bot.fetch_channel('479512513378123798')
     for cog in loadconfig.__cogs__:
         try:
             bot.load_extension(cog)
@@ -29,6 +30,7 @@ async def on_ready():
 
 @bot.event
 async def on_voice_state_update(member, before, after):
+    chatChannel = discord.utils.get(member.guild.channels, name="general")
     if (before.channel and not after.channel):
         if (random.randint(1, 5) > 3):
             await chatChannel.send(f'bye {member.mention}. . .')
