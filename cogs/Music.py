@@ -1,6 +1,9 @@
 import discord
 import asyncio
 import youtube_dl
+import requests
+import urllib.parse
+from bs4 import BeautifulSoup
 from discord.ext import commands
 
 ytdl_format_options = {
@@ -35,18 +38,30 @@ class YTDLSource(discord.PCMVolumeTransformer):
     # unused, future functionality where the user is able to search the name of a video and receive a 
     # list containing the top 5 results
     @classmethod
-    async def list_from_url(cls, title, *, loop=None):
-        string = f'Displaying results for {title}:\n```'
-        loop = loop or asyncio.get_event_loop()
-        data = await loop.run_in_executor(None, lambda: ytdl.extract_info(title, download=False))
+    def search(cls, term):
+        query = urllib.parse.quote(term)
+        BASE_URL = "https://youtube.com"
+        url = f"{BASE_URL}/results?search_query={query}&pbj=1"
+        parser = BeautifulSoup(requests.get(url).text, "lxml")
+        results = []
 
-        if 'entries' in data:
-            for entry in data['entries']:
-                string += entry.get('title')
-        else:
-            string += 'No entries found'
-        string += "```"
-        return string 
+        incr = 0
+        for entry in parser.select('.yt-lockup-content'):
+            if incr <= 4:
+                video = entry.select_one('a.spf-link')
+                channel = entry.select_one('.yt-lockup-byline').select_one('a').string
+                if video is not None and video['href'].startswith('/watch'):
+                    metadata = {
+                        'title': video.string,
+                        'url': video['href'],
+                        'by': channel
+                    }
+                    results.append(metadata)
+                else:
+                    print('not found')
+            incr += 1
+        return results
+
 
     @classmethod
     async def from_url(cls, url, *, loop=None, stream=False):
@@ -59,6 +74,8 @@ class YTDLSource(discord.PCMVolumeTransformer):
 
         filename = data['url'] if stream else ytdl.prepare_filename()
         return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
+
+
 
 # Cog for music commands 
 class Music(commands.Cog):

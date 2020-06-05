@@ -8,6 +8,8 @@ from discord.ext import commands
 
 load_dotenv()
 
+## just make an .env and put KEY=your_api_token
+
 bot = commands.Bot(command_prefix='.')
 token = os.getenv('KEY')
 chatChannel = None
