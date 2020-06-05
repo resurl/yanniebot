@@ -24,6 +24,7 @@ ffmpeg_options = {
 
 ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
 
+# class to handle music queries
 class YTDLSource(discord.PCMVolumeTransformer):
     def __init__(self, source, *, data, volume=0.5):
         super().__init__(source, volume)
@@ -31,6 +32,8 @@ class YTDLSource(discord.PCMVolumeTransformer):
         self.title = data.get('title')
         self.url = data.get('url')
 
+    # unused, future functionality where the user is able to search the name of a video and receive a 
+    # list containing the top 5 results
     @classmethod
     async def list_from_url(cls, title, *, loop=None):
         string = f'Displaying results for {title}:\n```'
@@ -48,6 +51,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
     @classmethod
     async def from_url(cls, url, *, loop=None, stream=False):
         loop = loop or asyncio.get_event_loop()
+        # will most likely always be false b/c of performance speed
         data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
         
         if 'entries' in data:
@@ -56,7 +60,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
         filename = data['url'] if stream else ytdl.prepare_filename()
         return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
 
-
+# Cog for music commands 
 class Music(commands.Cog):
 
     def __init__(self, bot):

@@ -19,7 +19,6 @@ async def on_ready():
     print('bot ready')
     print(f'Bot name: {bot.user.name}')
     print(f'Discord version: {discord.__version__}')
-    chatChannel = await bot.fetch_channel('479512513378123798')
     for cog in loadconfig.__cogs__:
         try:
             bot.load_extension(cog)
@@ -29,6 +28,7 @@ async def on_ready():
 
 @bot.event
 async def on_voice_state_update(member, before, after):
+    chatChannel = discord.utils.get(member.guild.channels, name="general")
     if (before.channel and not after.channel):
         if (random.randint(1, 5) > 3):
             await chatChannel.send(f'bye {member.mention}. . .')
