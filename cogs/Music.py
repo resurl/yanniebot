@@ -96,13 +96,20 @@ class Music(commands.Cog):
     @commands.command(aliases=['p'])
     async def play(self, ctx, *query):
         channel = ctx.author.voice.channel
+        terms = query[len(query)-1]
         if (query[0].startswith('https://')):
             query = ' '.join(query)
             await self.playMusic(ctx,channel,query)
-            
-        # sending result list
-        elif (query[len(query)-1] == 'list'):
-            await ctx.send(YTDLSource.search(query[:(len(query)-1)])) 
+        
+        elif (terms == 'list'):
+            terms = ' '.join(terms[0])
+            trunc_terms = query[:(len(query)-1)]
+            tt_string = ' '.join(trunc_terms)
+            list_result = YTDLSource.search(trunc_terms)
+            msg = f'>>> Results for **{tt_string}**\n'
+            for x in list_result:
+                msg += f'**{x["title"]} by {x["by"]}**\n{x["url"]}\n\n'
+            await ctx.send(msg) 
 
         elif (query):
             result = YTDLSource.search(query, limit=1)
