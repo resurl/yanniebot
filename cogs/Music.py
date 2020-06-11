@@ -37,6 +37,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
 
     @staticmethod
     def search(*args, limit=4):
+        print(args)
         search_terms = ' '.join(args[0])
         query = urllib.parse.quote(search_terms)
         BASE_URL = "https://youtube.com"
@@ -92,6 +93,14 @@ class Music(commands.Cog):
                 
             await context.send(f'Now playing: {player.title}') # put embed here later
 
+    @commands.command()
+    async def list(self, ctx, *query):
+        tt_string = ' '.join(query)
+        list_result = YTDLSource.search(query)
+        msg = f'>>> Results for **{tt_string}**\n'
+        for x in list_result:
+             msg += f'**{x["title"]} by {x["by"]}**\n{x["url"]}\n\n'
+        await ctx.send(msg) 
 
     @commands.command(aliases=['p'])
     async def play(self, ctx, *query):
@@ -100,16 +109,6 @@ class Music(commands.Cog):
         if (query[0].startswith('https://')):
             query = ' '.join(query)
             await self.playMusic(ctx,channel,query)
-        
-        elif (terms == 'list'):
-            terms = ' '.join(terms[0])
-            trunc_terms = query[:(len(query)-1)]
-            tt_string = ' '.join(trunc_terms)
-            list_result = YTDLSource.search(trunc_terms)
-            msg = f'>>> Results for **{tt_string}**\n'
-            for x in list_result:
-                msg += f'**{x["title"]} by {x["by"]}**\n{x["url"]}\n\n'
-            await ctx.send(msg) 
 
         elif (query):
             result = YTDLSource.search(query, limit=1)
@@ -117,6 +116,7 @@ class Music(commands.Cog):
 
         elif (ctx.voice_client.is_paused):
             ctx.voice_client.resume()
+
         else:
             await ctx.send('No query specified!')
         
