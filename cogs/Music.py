@@ -35,22 +35,21 @@ class YTDLSource(discord.PCMVolumeTransformer):
         self.title = data.get('title')
         self.url = data.get('url')
 
-    # unused, future functionality where the user is able to search the name of a video and receive a 
-    # list containing the top 5 results
-    @classmethod
-    def search(cls, term):
-        query = urllib.parse.quote(term)
+    @staticmethod
+    def search(*args, limit=4):
+        search_terms = ' '.join(args[0])
+        query = urllib.parse.quote(search_terms)
         BASE_URL = "https://youtube.com"
         url = f"{BASE_URL}/results?search_query={query}&pbj=1"
         parser = BeautifulSoup(requests.get(url).text, "lxml")
         results = []
-
         incr = 0
+
         for entry in parser.select('.yt-lockup-content'):
-            if incr <= 4:
+            if incr <= limit:
                 video = entry.select_one('a.spf-link')
                 channel = entry.select_one('.yt-lockup-byline').select_one('a').string
-                if video is not None and video['href'].startswith('/watch'):
+                if ((video is not None) and (video['href'].startswith('/watch'))):
                     metadata = {
                         'title': video.string,
                         'url': video['href'],
@@ -60,8 +59,8 @@ class YTDLSource(discord.PCMVolumeTransformer):
                 else:
                     print('not found')
             incr += 1
-        return results
 
+        return results
 
     @classmethod
     async def from_url(cls, url, *, loop=None, stream=False):
@@ -83,35 +82,39 @@ class Music(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(aliases=['p,play'])
-    async def play(self, ctx, query=None, showResults=None):
-        channel = ctx.author.voice.channel
-        if (query.startsWith('https://')):
-            await channel.connect()
-            vc = ctx.voice_client
-            async with ctx.typing():
-                player = await YTDLSource.from_url(query, loop=self.bot.loop, stream=True)
-                ctx.voice_client.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
-                
-                await ctx.send(f'Now playing: {player.title}') # put embed here later
+    async def playMusic(self, context, chnl, url):
+        await chnl.connect()
+        vc = context.voice_client
         
-        elif (showResults is not None): 
-            results = YTDLSource.search(query)
-            msg = f'Search results for {query}'
-            for x in range(0,5):
-                msg += f'{x}. {results[x].title} by {results[x].by}\n'
+        async with context.typing():
+            player = await YTDLSource.from_url(url, loop=self.bot.loop, stream=True)
+            context.voice_client.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
+                
+            await context.send(f'Now playing: {player.title}') # put embed here later
 
-            await ctx.send(msg)
-        elif (query is not None and showResults is None):
-            # implement later........
-            await ctx.send('a')
-        elif(ctx.voice_client.is_paused and query is None):
+
+    @commands.command(aliases=['p'])
+    async def play(self, ctx, *query):
+        channel = ctx.author.voice.channel
+        if (query[0].startswith('https://')):
+            query = ' '.join(query)
+            await self.playMusic(ctx,channel,query)
+            
+        # sending result list
+        elif (query[len(query)-1] == 'list'):
+            await ctx.send(YTDLSource.search(query[:(len(query)-1)])) 
+
+        elif (query):
+            result = YTDLSource.search(query, limit=1)
+            await self.playMusic(ctx, channel, result[0]['url'])
+
+        elif (ctx.voice_client.is_paused):
             ctx.voice_client.resume()
         else:
             await ctx.send('No query specified!')
         
     # if audio is playing
-    @commands.command()
+    @commands.command(aliases=['stop'])
     async def pause(self, ctx):
         if (ctx.voice_client.is_playing):
             ctx.voice_client.pause()
