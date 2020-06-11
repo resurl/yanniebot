@@ -2,6 +2,7 @@ import discord
 import asyncio
 import youtube_dl
 import requests
+import aiohttp
 import urllib.parse
 from bs4 import BeautifulSoup
 from discord.ext import commands
@@ -35,14 +36,29 @@ class YTDLSource(discord.PCMVolumeTransformer):
         self.title = data.get('title')
         self.url = data.get('url')
 
-    @staticmethod
-    def search(*args, limit=4):
-        print(args)
+    @classmethod
+    async def fetch(cls,url,client):
+        async with client.get(url) as response:
+            assert response.status == 200
+            return await response.text()
+
+    @classmethod
+    async def search(cls,*args, limit=4):
+
+        """Generates metadata from Youtube search pages
+        :param args:  What the user wants to search
+        :param limit: (optional) How many entries of video metadata you want
+        :return: Dict containing video's title, creator, and url 
+        """
+
         search_terms = ' '.join(args[0])
         query = urllib.parse.quote(search_terms)
         BASE_URL = "https://youtube.com"
         url = f"{BASE_URL}/results?search_query={query}&pbj=1"
-        parser = BeautifulSoup(requests.get(url).text, "lxml")
+        html = ''
+        async with aiohttp.ClientSession() as client:
+            html = await cls.fetch(url,client)
+        parser = BeautifulSoup(html, 'lxml')
         results = []
         incr = 0
 
@@ -96,7 +112,7 @@ class Music(commands.Cog):
     @commands.command()
     async def list(self, ctx, *query):
         tt_string = ' '.join(query)
-        list_result = YTDLSource.search(query)
+        list_result = await YTDLSource.search(query)
         msg = f'>>> Results for **{tt_string}**\n'
         for x in list_result:
              msg += f'**{x["title"]} by {x["by"]}**\n{x["url"]}\n\n'
