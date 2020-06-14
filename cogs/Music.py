@@ -59,6 +59,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
         async with aiohttp.ClientSession() as client:
             html = await cls.fetch(url,client)
         parser = BeautifulSoup(html, 'lxml')
+        print(parser)
         results = []
         incr = 0
 
